@@ -1,0 +1,59 @@
+name: Create Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Repository Name"
+        required: true
+        type: string
+      organization:
+        description: "Organization Name"
+        required: true
+        type: string
+      description:
+        description: "Repository Description"
+        required: false
+        type: string
+      engineer-type:
+        description: "Engineer Type (platform or data)"
+        required: true
+        type: string 
+      defbranch:
+        description: "Default Branch"
+        required: false
+        default: "main"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and run Docker image
+        run: |
+          docker build -t repo-creator .
+          docker run --env GITHUB_TOKEN=${{ secrets.GH_TOKEN }} repo-creator -n ${{ github.event.inputs.name }} -o ${{ github.event.inputs.organization }} -d "${{ github.event.inputs.description }}" -b ${{ github.event.inputs.defbranch }} -t ${{ github.event.inputs.engineer-type }}
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: pip install flake8
+
+      - name: Lint Python code
+        run: flake8 main.py
